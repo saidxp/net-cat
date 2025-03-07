@@ -50,7 +50,7 @@ func Checkmap(name string, auth *Authentication) bool {
 	}
 	return true
 }
-func Getmessages(db *sql.DB) ([]string, error) {
+func Getmessages(db *sql.DB, groube string) ([]string, error) {
 	tablerow, err := db.Query("SELECT content FROM messages;")
 	if err != nil {
 		return nil, err
