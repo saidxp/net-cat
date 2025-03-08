@@ -42,8 +42,9 @@ func CheckMessage(s string) bool {
 }
 
 	
-func Checkmap(name string, auth *Authentication) bool {
-	for key , _ := range auth.Con {
+func Checkmap(name string, auth *Authentication, g string) bool {
+	m := auth.Con[g]
+	for key , _ := range m {
 		if key == name {
 			return false
 		}
@@ -51,7 +52,7 @@ func Checkmap(name string, auth *Authentication) bool {
 	return true
 }
 func Getmessages(db *sql.DB, groube string) ([]string, error) {
-	tablerow, err := db.Query("SELECT content FROM messages;")
+	tablerow, err := db.Query("SELECT content FROM messages WHERE groubname = ?;", groube)
 	if err != nil {
 		return nil, err
 	}
