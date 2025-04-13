@@ -2,14 +2,14 @@ package connection
 
 import (
 	"fmt"
-	"time"
-	"database/sql"
+	"io"
 	"test/Helpers"
+	"time"
 )
 
 
-func Server(Ser *helpers.Authentication, db *sql.DB) {
-	 
+func Server(Ser *helpers.Authentication ) {
+
 	// idont know why this it's work just with loop while he is just one message who is pass in channel!
 	// now i understand  whi i use loop with channel becs ti need to handle multi message who is come form client 
 	// m := <-ser.message
@@ -20,10 +20,16 @@ func Server(Ser *helpers.Authentication, db *sql.DB) {
 		namegroube := m.Groube
 		fmt.Println(namegroube)
 		fmt.Println(result)
+		Ser.Mu.Lock()
+		n := Ser.Log[namegroube]
+		io.WriteString(n, result + "\n")
+		Ser.Mu.Unlock()
+		/*
 		_, err := db.Exec("INSERT INTO messages (groubname, content) VALUES (?, ?);", namegroube ,result)
 		if err != nil {
 			fmt.Println("Not insert data into the table")
 		}
+		*/
 		Ser.Mu.Lock()
 		Thetargetone := Ser.Con[m.Groube]
 		Ser.Mu.Unlock()

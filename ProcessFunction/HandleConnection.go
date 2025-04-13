@@ -2,17 +2,17 @@ package connection
 
 import (
 	"bufio"
-	"database/sql"
 	"fmt"
+	"io"
 	"net"
 	"os"
 	"strings"
 	"time"
 
-	"test/Helpers"
+	helpers "test/Helpers"
 )
 
-func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure chan struct{}, db *sql.DB) {
+func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure chan struct{}, logfile *os.File) {
 	defer client.Close()
 	con := bufio.NewReader(client)
 	s, err := os.ReadFile("file.txt")
@@ -28,94 +28,72 @@ func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure ch
 
 	// her i check the valide name of user !
 	name, err = Checknameandreturn(client)
+
+	t := time.Now().Format("[2006-01-02 15:04:05]")
+
+	ffff := fmt.Sprintf("Info: the user `%q` IP : %s is connected successfuly to server AT %s", name, client.RemoteAddr().String(), t)
+	logfile.WriteString(ffff + "\n")
 	if err != nil {
 		fmt.Println("Error to read the name from user")
 	}
-	/*
-		for {
-			fmt.Fprintf(client, "[ENTER YOUR NAME]: ")
-			str, err := con.ReadString('\n')
-			if err != nil {
-				fmt.Println("Error to read data from client !\n")
-				fmt.Fprintf(client, "Error: Failed to read your input. Please try again.\n")
-			}
-			// her i will handle the name of user to not be special char !!
-			if helpers.Check(str) {
-				// -- > i trim the '\n'
-				name = strings.TrimSpace(str)
-				// here i check if the name is enregister at map !!
-				break
-			} else {
-				fmt.Fprintf(client, "Invalid name. Please avoid special characters\n")
-			}
-		}
-	*/
-	// var gg string
-	// Her i enregister the users and There connection into map !!
-	// i need to be sure the name of the >client not duplicate in this case of this Mini chat !!
-	// i
 	print(name + "\n")
 	// her i need to handle the name of groube
-
 	gg, err = checkgroubeandreturn(client, name, auth)
 	if err != nil {
 		fmt.Print("ERRO TO READ THE NAME OF GROUBE")
 	}
-
-	/*for {
-		t := "Welcome u are login now please Entre Wich any groube u want ... 1 or 2"
-		l := "Hello " + name
-		Welcome := fmt.Sprintf("%s %s : ", l, t)
-		fmt.Fprintf(client, Welcome)
-
-		g, err = con.ReadString('\n')
-		fmt.Printf("the messag %s\n",g)
-		if err != nil {
-			fmt.Println("Eroorrr to read the the stdin from client")
-		}
-		gg = strings.TrimSpace(g)
-		// her i will check if this name it's deplicate in groube who it's enregister
-		if helpers.Checkmap(name, auth, gg) {
-		fmt.Printf("AFTER THE TRIM SPACE %s\n",gg)
-		if gg == "1" || gg == "2" {
-			fmt.Printf("I BREAK HERE THE LOOP\n")
-			break
-		} else {
-			fmt.Fprintf(client, "Failed try again the name of groube must be between >> 1 and 2\n")
-		}
-		}else {
-			fmt.Fprintf(client, "Failed try again After u entre the name of groube there is a Duplicate Name in the groube u try to joined it\n")
-
-		}
-	}
-	*/
 	fmt.Printf("the name of groube %s\n", gg)
 	// after the client entre the name and groube i need to enregister them !!
 	// i face problem her !!
 	// i lock all thread to accesse to this shared map ! write !
-	// if i dont check if the groube it's exeist or not there is aprobelm is when user log the entire map is deleted and it's initialzation new one !
+	// if i dont check if the groube it's exeist or not there is aprobelm is when user login the entire map is deleted and it's initialzation new one !
 	auth.Mu.Lock()
 	if _, exists := auth.Con[gg]; !exists {
 		auth.Con[gg] = make(map[string]*helpers.Link) // Only initialize if group doesnt exist
 	}
-	fmt.Printf("the name of Groube : %s the members of groube %s\n", gg, name)
+	// i will creat a file by name of groube and i will check if is exist or no !
+	// BUT IF IS execist i need to check !
+	if !helpers.Exists(gg + ".txt") {
+		f, err := os.Create(gg + ".txt")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error \"At Creation File\"occurred:\"%v\n\"", err)
+			// kill Process >> File Not Create
+			os.Exit(1)
+		}
+		// Here i add a name of goube to map with her File for enregister the message of this groube !
+		fmt.Print("--- AT Enregister the file at map")
+		auth.Log[gg] = f
+	}
+	// --------->>>>
+	fmt.Printf("The Name of Groube : %s The Members of Groube %s\n", gg, name)
 	auth.Con[gg][name] = &helpers.Link{Conn: client} // Add user to the group
+	bbbb := fmt.Sprintf("User %s is joined at Groube %s", name, gg)
+	logfile.WriteString(bbbb + "\n")
 	auth.Mu.Unlock()
-
+	// >>>>>>>>>>>>>>>>>>>>>>>
 	// >>>>>>>>>>>>>>>>>>>>>>>
 	times := time.Now().Format("[2006-01-02 15:04:05]")
 	result := fmt.Sprintf("%s[%s]:", times, name)
 	// >>>>>>>>>>>>>>>>>>>>>>>
+	logmessage := auth.Log[gg]
+	logmessage.Seek(0, io.SeekStart)
+	fl, err := io.ReadAll(logmessage)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error occurred: %v\n", err)
+	}
+
+	client.Write(fl)
 	// here im still need to spesific the chat in spesific Groube !!
-	conversion, err := helpers.Getmessages(db, gg)
+	/*conversion, err := helpers.Getmessages(db, gg)
 	if err != nil {
 		fmt.Println("erro to get message from data base")
 	}
 	for _, m := range conversion {
 		fmt.Fprintf(client, m+"\n")
 	}
+	*/
 	fmt.Fprintf(client, result)
-	// Her i send Welcome message to every one login into server !!
+	// Her i send Welcome message to every one login into server with spesific the target groube !!
 	Thetargetone := auth.Con[gg]
 	fmt.Println("Group Members:", auth.Con[gg])
 	// her i specific the groube of client where he is enregister !!
@@ -149,6 +127,9 @@ func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure ch
 			// I Move the reservation from channel!!
 			<-limiteure
 			// i delete the conection of the client who is left !
+			t := time.Now().Format("[2006-01-02 15:04:05]")
+			ffff := fmt.Sprintf("info : The user %s is log out successfuly AT : %s", name, t)
+			logfile.WriteString(ffff + "\n")
 			delete(auth.Con[gg], name)
 			// TODO: send message to all client if the client it's left the chatroom!
 			break

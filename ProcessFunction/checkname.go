@@ -23,7 +23,6 @@ func Checknameandreturn(client net.Conn) (string, error) {
 	if helpers.Check(str) {
 		// -- > i trim the '\n'
 		name = strings.TrimSpace(str)
-		// here i check if the name is enregister at map !!
 		break
 	} else {
 		fmt.Fprintf(client, "Invalid name. Please avoid special characters\n")

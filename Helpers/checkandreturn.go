@@ -2,6 +2,7 @@ package helpers
 
 import "database/sql"
 import "unicode"
+import "os"
 
 func Check(str string) bool{
 	if len(str) <= 1 {
@@ -16,6 +17,7 @@ func Check(str string) bool{
 	}
 	return true
 }
+
 func CheckMessage(s string) bool {
 	/*for _, r := range s { 
 		if r < 32 || r == 127 {
@@ -41,7 +43,6 @@ func CheckMessage(s string) bool {
 	return true
 }
 
-	
 func Checkmap(name string, auth *Authentication, g string) bool {
 	m := auth.Con[g]
 	for key , _ := range m {
@@ -51,6 +52,7 @@ func Checkmap(name string, auth *Authentication, g string) bool {
 	}
 	return true
 }
+
 func Getmessages(db *sql.DB, groube string) ([]string, error) {
 	tablerow, err := db.Query("SELECT content FROM messages WHERE groubname = ?;", groube)
 	if err != nil {
@@ -66,4 +68,13 @@ func Getmessages(db *sql.DB, groube string) ([]string, error) {
 		messages = append(messages, msg)
 	}
 	return messages, nil
+}
+
+func Exists(file string) bool{
+
+	info, err := os.Stat(file)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()	
 }
