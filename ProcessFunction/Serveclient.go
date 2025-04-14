@@ -7,29 +7,21 @@ import (
 	"time"
 )
 
-
 func Server(Ser *helpers.Authentication ) {
 
 	// idont know why this it's work just with loop while he is just one message who is pass in channel!
-	// now i understand  whi i use loop with channel becs ti need to handle multi message who is come form client 
+	// now i understand  whi i use loop with channel becs it need to handle multi message who is come form client 
 	// m := <-ser.message
 	for m := range Ser.Msg {
 		timestamp := time.Now().Format("[2006-01-02 15:04:05]") //[YYYY-MM-DD HH:MM:SS]
 		// Format message !!
 		result := fmt.Sprintf("%s[%s]:%s", timestamp, m.Login, m.Content)
 		namegroube := m.Groube
-		fmt.Println(namegroube)
-		fmt.Println(result)
 		Ser.Mu.Lock()
 		n := Ser.Log[namegroube]
 		io.WriteString(n, result + "\n")
 		Ser.Mu.Unlock()
-		/*
-		_, err := db.Exec("INSERT INTO messages (groubname, content) VALUES (?, ?);", namegroube ,result)
-		if err != nil {
-			fmt.Println("Not insert data into the table")
-		}
-		*/
+		// The target connection!
 		Ser.Mu.Lock()
 		Thetargetone := Ser.Con[m.Groube]
 		Ser.Mu.Unlock()
@@ -40,10 +32,9 @@ func Server(Ser *helpers.Authentication ) {
 			}
 			// her i was face the problem of not send to all client !!
 			// the problem of new line ~ !!!
-			//_, err := link.Conn.Write([]byte("\n" + result + "\n"))
 			_, err := fmt.Fprintf(link.Conn, "\n"+result+"\n")
 			if err != nil {
-				fmt.Println("Error writing to ", m.Login)
+				fmt.Println("Error writing to %s", m.Login)
 			}
 		}
 		for name, link := range Thetargetone {

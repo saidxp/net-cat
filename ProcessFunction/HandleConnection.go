@@ -25,7 +25,6 @@ func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure ch
 	client.Write([]byte(s))
 	// I will check if it is a valide name who dont conatin special char !!
 	// Check and check until the user entre correct Name!!
-
 	// her i check the valide name of user !
 	name, err = Checknameandreturn(client)
 
@@ -36,13 +35,11 @@ func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure ch
 	if err != nil {
 		fmt.Println("Error to read the name from user")
 	}
-	print(name + "\n")
 	// her i need to handle the name of groube
 	gg, err = checkgroubeandreturn(client, name, auth)
 	if err != nil {
-		fmt.Print("ERRO TO READ THE NAME OF GROUBE")
+		fmt.Print("ERROR TO READ THE NAME OF GROUBE")
 	}
-	fmt.Printf("the name of groube %s\n", gg)
 	// after the client entre the name and groube i need to enregister them !!
 	// i face problem her !!
 	// i lock all thread to accesse to this shared map ! write !
@@ -61,11 +58,9 @@ func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure ch
 			os.Exit(1)
 		}
 		// Here i add a name of goube to map with her File for enregister the message of this groube !
-		fmt.Print("--- AT Enregister the file at map")
 		auth.Log[gg] = f
 	}
 	// --------->>>>
-	fmt.Printf("The Name of Groube : %s The Members of Groube %s\n", gg, name)
 	auth.Con[gg][name] = &helpers.Link{Conn: client} // Add user to the group
 	bbbb := fmt.Sprintf("User %s is joined at Groube %s", name, gg)
 	logfile.WriteString(bbbb + "\n")
@@ -80,22 +75,12 @@ func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure ch
 	fl, err := io.ReadAll(logmessage)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error occurred: %v\n", err)
+		fmt.Print("There is no Conversation before u joined\n")
 	}
-
 	client.Write(fl)
-	// here im still need to spesific the chat in spesific Groube !!
-	/*conversion, err := helpers.Getmessages(db, gg)
-	if err != nil {
-		fmt.Println("erro to get message from data base")
-	}
-	for _, m := range conversion {
-		fmt.Fprintf(client, m+"\n")
-	}
-	*/
 	fmt.Fprintf(client, result)
-	// Her i send Welcome message to every one login into server with spesific the target groube !!
+	// her i send Welcome message to every one login into server with spesific the target groube !!
 	Thetargetone := auth.Con[gg]
-	fmt.Println("Group Members:", auth.Con[gg])
 	// her i specific the groube of client where he is enregister !!
 	for n, link := range Thetargetone {
 		if n != name {
@@ -134,12 +119,9 @@ func Handleconection(client net.Conn, auth *helpers.Authentication, limiteure ch
 			// TODO: send message to all client if the client it's left the chatroom!
 			break
 		}
-		fmt.Printf("string : %q\n", chat)
-		fmt.Printf("%d", len(chat))
 		// her i will check the shape of message !!
 		if len(chat) > 1 && helpers.CheckMessage(chat) {
 			cha := strings.TrimSpace(chat)
-			fmt.Printf("string : %q\n", chat)
 			auth.Msg <- helpers.Message{
 				Login:   name,
 				Content: cha,
